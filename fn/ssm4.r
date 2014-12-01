@@ -106,7 +106,7 @@ function (loc.list, adapt, samples, thin, chains, LM=FALSE, HO=FALSE, res,
             	jags.params <- c("Sigma", "x", "theta", "gamma", "phi", "b", "h",
             	"psi", "zhat")
 
-              model.file = "jags/haulout4b.txt"
+              model.file = "jags/haulout4.txt"
 
 
 	if(chains==1) jags.inits = jags.inits[[1]]

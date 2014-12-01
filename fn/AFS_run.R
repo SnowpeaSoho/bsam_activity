@@ -5,10 +5,10 @@ library(markovchain)
 
 load("AFS_project.Rdata")
 
-source("check.divetime.tstep.R") # function deals with the HOs
-source("dat4jags_reg.R") # adapted to regular start times
-source("plot.output.R")
-source("ssm4.R")
+source("fn/check.divetime.tstep.R") # function deals with the HOs
+source("fn/dat4jags_reg.R") # adapted to regular start times
+source("fn/plot.output.R")
+source("fn/ssm4.R")
 
 tod <- TRUE
 tstep_hr <- 6
