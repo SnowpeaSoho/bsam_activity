@@ -1,0 +1,162 @@
+data {
+	pi <- 3.141592653589
+	Omega[1,1] <- 1
+	Omega[1,2] <- 0
+	Omega[2,1] <- 0
+	Omega[2,2] <- 1
+	first.loc[1] <- y[1,1]
+	first.loc[2] <- y[1,2]
+	}
+model
+{
+# Haulout1 - DCRWS with 3 states
+#    Created by Ian Jonsen & Sophie Bestley, 11/11/2014, last modified, 12/11/2014
+
+## priors on process uncertainty
+iSigma[1:2,1:2] ~ dwish(Omega[,], 2)
+Sigma[1:2,1:2] <- inverse(iSigma[,])
+
+tmp[1] ~ dbeta(10, 10)      # dbeta(20, 20)
+tmp[2] ~ dbeta(10, 10)      # dbeta(1, 1)   # try a more informative prior
+tmp[3] ~ dbeta(1, 1)
+theta[1] <- (2 * tmp[1] - 1) * pi   # prior on interval -pi, pi
+theta[2] <- tmp[2] * pi * 2         # prior on interval 0, 2pi
+theta[3] <- tmp[3] * pi * 2
+
+gamma[1] ~ dbeta(2, 1.5) 	## prior for gamma in b=1
+dev[1] ~ dbeta(1, 1)			## rnd deviate to ensure gamma[2] > gamma[1]
+dev[2] ~ dbeta(1, 1)
+gamma[2] <- gamma[1] * dev[1]
+gamma[3] <- gamma[2] * dev[2]
+
+# Priors for prob of switching
+a[1,1] <- 1
+a[1,2] <- 1
+a[1,3] <- 1#0
+a[2,1] <- 1
+a[2,2] <- 1
+a[2,3] <- 1#0
+a[3,1] <- 1
+a[3,2] <- 1
+a[3,3] <- 1
+
+phi[1,1:3] ~ ddirch(a[1,1:3])
+phi[2,1:3] ~ ddirch(a[2,1:3])
+phi[3,1:3] ~ ddirch(a[3,1:3])
+
+aa[1,1] <- 1
+aa[1,2] <- 1
+aa[1,3] <- 1
+lambda[1:3] ~ ddirch(aa[1,1:3])
+
+# estimate initial haulout (h) and behavioural (b) states
+b[1] ~ dcat(lambda[]) ## assign b for first obs
+h[1] <- 3 # 2
+logpsi ~ dunif(-10, 10)		## inflation/deflation factor for estimation error
+psi <- exp(logpsi)
+
+## Priors for first location
+for(k in 1:2){
+	x[1,k] ~ dt(first.loc[k], itau2[1,k] * psi, nu[1,k])
+	}
+
+## Assume simple random walk to estimate 2nd regular position
+x[2,1:2] ~ dmnorm(x[1,], iSigma[,])
+
+## Transition equation
+for(t in 2:(RegN-1)){
+  # original hierarchical haulout code
+#	z[t,1] <- ho[t] 					# Pr(hauled out)
+#	z[t,2] <- 1-ho[t]					# Pr(not hauled out)
+#	h[t] ~ dcat(z[t,1:2])     # h=1 Hauled out; h=2 Not hauled out
+#	v[t,1] <- phi[b[t-1],1]*(h[t]-1)	# Pr(fast | not hauled out)
+#	v[t,2] <- phi[b[t-1],2]*(h[t]-1)	# Pr(slow | not hauled out)
+#	v[t,3] <- 1-step(h[t]-2)			# Pr(hauled out)
+#	b[t] ~ dcat(v[t,1:3])
+#	
+	#### try new
+	z[t,1] <- phi[b[t-1],1] 					# Pr(transit)       
+	z[t,2] <- 1-phi[b[t-1],1]					# Pr(not transit)   
+	h[t] ~ dcat(z[t,1:2])             # h=1 Transit; h=2 Not transit
+  v[t,1] <- 2-h[t]                  # Pr(transit)
+  
+  z2[t,1] <- 1-ho[t]	               # Pr(res-active)	
+  z2[t,2] <- ho[t]	                 # Pr(res-inactive)  
+	h2[t] ~ dcat(z2[t,1:2])            # h2=1 res-active; h2=2 res-inactive
+  # WORKING VERSION
+	# fit07j ... looking closely see ~20%  b>2
+	# fit07k same again, back with a's to 0 ... back to all b inside 1-2
+	# fit07j2 ... as for j case, setting a[1,3] to 0, a[2,3] to 1 ... next run... more s3 but not "better" - instead misses s2-s3 transitions?
+  #v[t,3] <- phi[b[t-1],3]*(step(h2[t]-2))*(h[t]-1)	    # Pr(res-inactive | not transit)	
+  #v[t,2] <- (1 - phi[b[t-1],1]) * (1 - phi[b[t-1],3]) 	# Pr(res-active | not transit) # if all phis were being estimated OK?  
+  
+  # TOY - reverse engineering - brings all more toward 3, harder to distinguish
+  #v[t,2] <- phi[b[t-1],2]*(step(1-h2[t]))*(h[t]-1)	    # Pr(res-active | not transit)	
+  #v[t,3] <- (1 - phi[b[t-1],1]) * (1 - phi[b[t-1],2]) 	# Pr(res-inactive | not transit) # if all phis were being estimated OK?  
+  
+  # 2-STATES only; this at least produces s1 & s2 but no s3
+	#v[t,3] <- ifelse(v[t,1]<1, phi[b[t-1],3]*(h2[t]-1),0)  # Pr(res-inactive | not transit)
+	#v[t,2] <- (1 - phi[b[t-1],1]) * (1 - phi[b[t-1],3]) # Pr(res-active | not transit)
+  
+  # 2-STATES only; back to only s1 & s2 again...  fit07h.   ...Was 0%
+  # tried again with all a's=1 ... fit07i ... gives ~5% s3  ...Actually 17% >2
+  #v[t,3] <- ifelse((v[t,1]<1 && h2[t]-1), phi[b[t-1],3],0)  # Pr(res-inactive | not transit)
+  #v[t,2] <- (1 - phi[b[t-1],1]) * (1 - phi[b[t-1],3])       # Pr(res-active | not transit)
+	
+  # 3-STATES, FEW s2; produces all 3 states, but very few s2
+  #v[t,2] <- ifelse(v[t,1]<1, phi[b[t-1],2]*(2-h2[t]),0)  # Pr(res-active | not transit)
+  #v[t,3] <- (1 - phi[b[t-1],1]) * (1 - phi[b[t-1],2])    # Pr(res-inactive | not transit)
+  
+  # 3-STATES, FEW s2; again, produces all 3 states, but very few s2   fit07g
+  # 47% fluctuate in area b > 2.5 - 3
+  #v[t,2] <- ifelse((v[t,1]<1 && 2-h2[t]), phi[b[t-1],2],0)  # Pr(res-active | not transit)
+  #v[t,3] <- (1 - phi[b[t-1],1]) * (1 - phi[b[t-1],2])       # Pr(res-inactive | not transit)
+
+  # SINGLE STATE; this produces only s1
+	#v[t,3] <- phi[b[t-1],3]*(h2[t]-1)*(h[t]-1)	# Pr(res-inactive | not transit)
+  #v[t,2] <- phi[b[t-1],2]*(step(1.5-h2[t]))*(h[t]-1)	# Pr(res-active | not transit)	
+  ##v[t,2] <- (1 - phi[b[t-1],1]) * (1 - phi[b[t-1],3]) 	# Pr(res-active | not transit) # if all phis were being estimated OK?  
+  
+  # BOMBS; this completes burnin then bombs on last timestep during update???? incomplete fit07g
+  #v[t,2] <- ifelse(v[t,1]<1, phi[b[t-1],2]*(2-h2[t]),0)  # Pr(res-active | not transit)
+  #v[t,3] <- ifelse(v[t,1]<1, phi[b[t-1],3]*(h2[t]-1),0)  # Pr(res-inactive | not transit)
+  #v[t,2] <-  phi[b[t-1],2]*(2-h2[t])*(h[t]-1)  # Pr(res-active | not transit)
+  v[t,3] <-  phi[b[t-1],3]*(h2[t]-1)*(h[t]-1)  # Pr(res-inactive | not transit)
+  v[t,2] <- (1 - phi[b[t-1],1]) * (1 - phi[b[t-1],3])
+  
+  b[t] ~ dcat(v[t,1:3])             # draw b as 1 or 2-3      
+
+  Tdx[t,1] <- cos(theta[b[t]]) * (x[t,1] - x[t-1,1]) + sin(theta[b[t]]) * (x[t,2] - x[t-1,2])
+  x.mn[t,1] <- x[t,1] +  Tdx[t,1] * gamma[b[t]]
+  Tdx[t,2] <- -sin(theta[b[t]]) * (x[t,1] - x[t-1,1]) + cos(theta[b[t]]) * (x[t,2] - x[t-1,2])
+  x.mn[t,2] <- x[t,2] +  Tdx[t,2] * gamma[b[t]]
+  x[t+1,1:2] ~ dmnorm(x.mn[t,], iSigma[,])
+	}
+
+## estimate final b
+z[RegN,1] <- phi[b[RegN-1],1] 					# Pr(transit)       
+z[RegN,2] <- 1-phi[b[RegN-1],1]					# Pr(not transit)   
+h[RegN] ~ dcat(z[RegN,1:2])             # h=1 Transit; h=2 Not transit
+v[RegN,1] <- 2-h[RegN]                  # Pr(transit)
+
+z2[RegN,1] <- 1-ho[RegN]	               # Pr(res-active)	
+z2[RegN,2] <- ho[RegN]	                 # Pr(res-inactive)  
+h2[RegN] ~ dcat(z2[RegN,1:2])            # h2=1 res-active; h2=2 res-inactive
+
+#v[RegN,2] <-  phi[b[RegN-1],2]*(2-h2[RegN])*(h[RegN]-1)  # Pr(res-active | not transit)
+v[RegN,3] <-  phi[b[RegN-1],3]*(h2[RegN]-1)*(h[RegN]-1)  # Pr(res-inactive | not transit)
+v[RegN,2] <- (1 - phi[b[RegN-1],1]) * (1 - phi[b[RegN-1],3])
+#v[RegN,3] <- phi[b[RegN-1],3]*(step(h2[RegN]-2))*(h[RegN]-1)	    # Pr(res-inactive | not transit)	
+#v[RegN,2] <- (1 - phi[b[RegN-1],1]) * (1 - phi[b[RegN-1],3]) 	# Pr(res-active | not transit) # if all phis were being estimated OK?  
+b[RegN] ~ dcat(v[RegN,1:3])             # draw b as 1 or 2-3      
+
+##	Measurement equation
+for(t in 2:RegN){
+	for(i in idx[t-1]:(idx[t]-1)){
+		for(k in 1:2){
+			zhat[i,k] <- (1-j[i]) * x[t-1,k] + j[i] * x[t,k]
+			y[i,k] ~ dt(zhat[i,k], itau2[i,k] * psi, nu[i,k])
+			} #k
+		} #i
+	}	#t
+} #end
