@@ -2,6 +2,7 @@
 require(rjags)
 library(coda)
 library(markovchain)
+library(sp)
 
 load("data/AFS_project.RData")
 
@@ -32,3 +33,5 @@ fit <- ssm(loc.list=dat1, model="haulout4", LM=FALSE, HO=TRUE,
            adapt=n.burn, samples=n.iter, thin=n.thin, chains=n.chains)
 
 cat("Elapsed time: ", round((proc.time() - st)[3]/60,2), "min \n")
+
+plot.output(fit,dat1,haulout4=TRUE)
