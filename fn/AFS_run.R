@@ -3,12 +3,12 @@ require(rjags)
 library(coda)
 library(markovchain)
 
-load("AFS_project.Rdata")
+load("data/AFS_project.RData")
 
-source("fn/check.divetime.tstep.R") # function deals with the HOs
-source("fn/dat4jags_reg.R") # adapted to regular start times
-source("fn/plot.output.R")
-source("fn/ssm4.R")
+source("fn/check.divetime.tstep.r") # function deals with the HOs
+source("fn/dat4jags_reg.r") # adapted to regular start times
+source("fn/plot.output.r")
+source("fn/ssm4.r")
 
 tod <- TRUE
 tstep_hr <- 6
