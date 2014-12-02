@@ -9,8 +9,9 @@ if(haulout4) {
   out$b.new <- 2
   out$b.new[out$b>2] <- 3
   out$b.new[out$b<1.5] <- 1
+  nm <- 4
 } else {
-  out$b.new<- out$b.5
+  out$b.new<- out$b.5; nm <- 3
 }
 
 if(is.null(map_range)) {
@@ -19,7 +20,7 @@ if(is.null(map_range)) {
 }
 
 #windows()
-pdf(file=paste(dat1[[1]]$id[1],"haulout3.pdf",sep=""))
+pdf(file=paste(dat1[[1]]$id[1],"haulout",nm,".pdf",sep=""))
 
 #windows() # MAP STATES
 par(mar=c(1,1,1.5,1), oma=c(2,2,0,0))
