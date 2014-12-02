@@ -23,12 +23,12 @@ pdf(file=paste(dat1[[1]]$id[1],"haulout3.pdf",sep=""))
 
 #windows() # MAP STATES
 par(mar=c(1,1,1.5,1), oma=c(2,2,0,0))
-plot(argosdat$lon[argosdat$id==as.character(dat1[[1]]$id[1])],argosdat$lat[argosdat$id==as.character(dat1[[1]]$id[1])],
+plot(fit[[1]][[3]][,1],fit[[1]][[3]][,2],
      #xlim=c(78,82.5),ylim=c(-68.5,-66.5),
      xlim=map_range[1:2],ylim=map_range[3:4],
      type="b",col="gray",lty=3,
      xlab="",ylab="" ,yaxt="n",xaxt="n",main="", mgp=c(3,0.25,0))
-coastplot()
+#coastplot()
 points(out$lon,out$lat,col=c("black"),type="b")
 points(out$lon,out$lat,col=c("blue","red","green")[out$b.new],pch=16)
 points(out$lon[dat1[[1]]$ho==1],out$lat[dat1[[1]]$ho==1],col=c("black"))
