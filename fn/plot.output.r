@@ -31,18 +31,20 @@ plot(fit[[1]][[3]][,1],fit[[1]][[3]][,2],
      xlab="",ylab="" ,yaxt="n",xaxt="n",main="", mgp=c(3,0.25,0))
 #coastplot()
 points(out$lon,out$lat,col=c("black"),type="b")
-points(out$lon,out$lat,col=c("blue","red","green")[out$b.new],pch=16)
-points(out$lon[dat1[[1]]$ho==1],out$lat[dat1[[1]]$ho==1],col=c("black"))
+points(out$lon,out$lat,col=c("blue","red","gray")[out$b.new],pch=16)
+points(out$lon[dat1[[1]]$ho==1],out$lat[dat1[[1]]$ho==1],col=c("purple"))
+points(out$lon[dat1[[1]]$ho==1 & out$b.new==2],out$lat[dat1[[1]]$ho==1 & out$b.new==2],col=c("green"))
 
 degAxis(1, mgp=c(3,0.25,0),tcl=-0.25);
 degAxis(2,at=c(seq(-68,-60,by=2)), mgp=c(3,0.25,0),tcl=-0.25) ;
 mtext(dat1[[1]]$id[1],3,0.25,cex=1.5) #,adj=0.05
 mtext("Latitude",2,2); mtext("Longitude",1,2)
 
-
 # STATE TIME SERIES
 plot(out$date,out$b,type="b",main=dat1[[1]]$id[1])
-points(out$date,out$b,col=c("blue","red","green")[out$b.new],pch=16)
+points(out$date,out$b,col=c("blue","red","gray")[out$b.new],pch=16)
+points(out$date[dat1[[1]]$ho==1],out$b[dat1[[1]]$ho==1],col=c("purple"))
+points(out$date[dat1[[1]]$ho==1 & out$b.new==2],out$b[dat1[[1]]$ho==1 & out$b.new==2],col=c("green"))
 
 #windows()
 # GAMMA and THETA hist
