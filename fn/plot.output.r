@@ -7,8 +7,13 @@ table(dat1[[1]]$ho>0.5)
 
 if(haulout4) {
   out$b.new <- 2
-  out$b.new[out$b>2] <- 3
-  out$b.new[out$b<1.5] <- 1
+  out$b.new[out$b>2] <- 3 # anything above 2 gets allocated as 3
+  
+  out$b.new[out$b.mode==1] <- 1 # highest support for s1
+  out$b.new[out$b.new==2 & out$b2.prop < 0.5] <- 3 # poor support for s2 (i.e result of averaging s1 & s3 samples)
+  #out$b.new[out$b<1.5] <- 1
+  #out$b.new[dat1[[1]]$ho==1 & out$b.new==2 & out$b.mode==1] <- 1 # where averaging between (mainly) s1 & (sometimes) s3 results in s2
+ 
   nm <- 4
 } else {
   out$b.new<- out$b.5; nm <- 3
@@ -20,7 +25,7 @@ if(is.null(map_range)) {
 }
 
 #windows()
-pdf(file=paste(dat1[[1]]$id[1],"haulout",nm,".pdf",sep=""))
+pdf(file=paste("output/",dat1[[1]]$id[1],"haulout",nm,".pdf",sep=""))
 
 #windows() # MAP STATES
 par(mar=c(1,1,1.5,1), oma=c(2,2,0,0))
@@ -36,15 +41,17 @@ points(out$lon[dat1[[1]]$ho==1],out$lat[dat1[[1]]$ho==1],col=c("purple"))
 points(out$lon[dat1[[1]]$ho==1 & out$b.new==2],out$lat[dat1[[1]]$ho==1 & out$b.new==2],col=c("green"))
 
 degAxis(1, mgp=c(3,0.25,0),tcl=-0.25);
-degAxis(2,at=c(seq(-68,-60,by=2)), mgp=c(3,0.25,0),tcl=-0.25) ;
+degAxis(2,at=c(seq(-90,-50,by=2)), mgp=c(3,0.25,0),tcl=-0.25) ;
 mtext(dat1[[1]]$id[1],3,0.25,cex=1.5) #,adj=0.05
 mtext("Latitude",2,2); mtext("Longitude",1,2)
+
 
 # STATE TIME SERIES
 plot(out$date,out$b,type="b",main=dat1[[1]]$id[1])
 points(out$date,out$b,col=c("blue","red","gray")[out$b.new],pch=16)
-points(out$date[dat1[[1]]$ho==1],out$b[dat1[[1]]$ho==1],col=c("purple"))
-points(out$date[dat1[[1]]$ho==1 & out$b.new==2],out$b[dat1[[1]]$ho==1 & out$b.new==2],col=c("green"))
+points(out$date[dat1[[1]]$ho==1],out$b[dat1[[1]]$ho==1],col=c("purple"),lwd=2)
+points(out$date[dat1[[1]]$ho==1 & out$b.new==2],out$b[dat1[[1]]$ho==1 & out$b.new==2],col=c("green"),lwd=2)
+abline(h=1.5,lty=2); abline(h=2,lty=2);
 
 #windows()
 # GAMMA and THETA hist
